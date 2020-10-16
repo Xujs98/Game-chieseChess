@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+	<meta charset='utf-8' />
+	<meta name='viewport' content='width=device-width,initial-scale=1.0' />
+	<title>chess</title>
+	<style>
+		*{
+			padding:0;
+			margin:0;
+		}
+		body {
+			background-color:#333;
+		}
+		#mycanvas{
+			display:block;
+			margin: 10px auto;
+			cursor:pointer;
+		}
+		/*
+		.x{
+			position: absolute;
+			left: 50%;
+			top: 10px;
+			width: 648px;
+			height: 10px;
+			transform: translateX(-50%);
+		}
+		p{
+			float:left;
+			width:64.8px;
+			height: 10px;
+			background-color: pink;
+			border-right: 1px solid #fff;
+			box-sizing:border-box;
+		}
+		p:nth-child(10){
+			border-right: none;
+		}
+		*/
+	</style>
+</head>
+<body>
+<div class='box'>
+	<canvas id='mycanvas'>
+		你又用低級浏览器来打开？你不知道我很高级的吗？必须要用高级浏览器打开，赶紧用chrome浏览器打开，气死本CANVAS了！
+	</canvas>
+</div>
+<script src='./js/Chess.js'></script>	
+<script src='./js/Map.js'></script>
+<script src='./js/Game.js'></script>
+
+<script>
+
+	//格式化全部图片资源
+	var imgUrlAll = {
+		c:{
+			11:'./images/cb1.png',
+			12:'./images/cp1.png',
+			13:'./images/cc1.png',
+			14:'./images/cm1.png',
+			15:'./images/cx1.png',
+			16:'./images/cs1.png',
+			17:'./images/cj.png'
+		},
+		h:{
+			21: './images/hb1.png',
+			22:'./images/hp1.png',
+			23:'./images/hc1.png',
+			24:'./images/hm1.png',
+			25:'./images/hx1.png',
+			26:'./images/hs1.png',
+			27:'./images/hj.png'
+		},
+		bg: './images/bg.png'
+	}
+	
+	var img = new Image();
+	img.src = imgUrlAll.c.bing;
+	img.onload = function(){
+		console.log(1)
+	}
+	
+	var game = new Game({
+		el:' #mycanvas',
+		imgUrlData: imgUrlAll
+	});
+	
+</script>
+</body>
+</html>
