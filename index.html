@@ -38,10 +38,31 @@
 			border-right: none;
 		}
 		*/
+		.box{
+			position:relative;
+		}
+		#regret{
+			position:absolute;
+			top:80px;
+			left:5%;
+			width:100px;
+			height:50px;
+			background-color:skyblue;
+			border:none;
+			border-radius:5px;
+			color:#fff;
+			font-size:20px;
+			cursor:pointer;
+			
+		}
+		#regret:hover{
+			background-color:orange;
+		}
 	</style>
 </head>
 <body>
 <div class='box'>
+	<button id='regret'>悔 棋</button>
 	<canvas id='mycanvas'>
 		你又用低級浏览器来打开？你不知道我很高级的吗？必须要用高级浏览器打开，赶紧用chrome浏览器打开，气死本CANVAS了！
 	</canvas>
@@ -51,6 +72,8 @@
 <script src='./js/Game.js'></script>
 
 <script>
+	// 悔棋按钮
+	const regret = document.querySelector('#regret')
 
 	//格式化全部图片资源
 	var imgUrlAll = {
@@ -85,6 +108,11 @@
 		el:' #mycanvas',
 		imgUrlData: imgUrlAll
 	});
+	
+	
+	regret.onclick = function(){
+		game.maps.retractChess()
+	}
 	
 </script>
 </body>

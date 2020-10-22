@@ -1,286 +1,101 @@
-class Game{
-	constructor(page){
-		this.canvas = document.querySelector(page.el);
-		this.imgUrl = page.imgUrlData;
-		this.ctx = this.canvas.getContext('2d');
-		this.notStrike = true
-		
-		
-		// 配置
-		this.config = {
-			
-			// 画布初始化宽高
-			canvasSize: {
-				w: 648,
-				h: 576
-			},
-			// 间距
-			interval: 24,
-			// 边线大小
-			borderSize: 1,
-			// 格子大小
-			gridSize: 65,
-			// 棋子大小
-			chessSize: 50,
-			// 棋子移动速度
-			chessSpeed: 6
-		}
-		// 存儲棋盘
+class Map{
+	constructor(){
+		// 记录历史存儲棋盘
 		this.historysMap = []
 		this.chessIdx = 0
+		this.init()
+		this.lock = true;
 		
-		this.init();
+		// 悔棋函數节流
+		this.retractChessLock = true
 		
-		
-		
-		// 静态资源文件全部加载完毕执行 渲染程序
-		var self = this;
-		this.dataAllLoad(function (info){
-			self.start();
-			// 绑定监听
-			self.bingEvent();
-		});
-		
-		// 回调类数组对象 key是帧编号 value是这个帧编号要做的事情
-		this.callbackss = {}
-		
-		//状态机
-		this.fsm = '静稳'
-		
+		// 悔棋信号量
+		this.retractIdx = 0
 	}
-	
-	// 初始化
 	init() {
-		// set画布宽高
-		this.canvas.width = this.config.canvasSize.w;
-		this.canvas.height = this.config.canvasSize.h;
-
+		/*
+		*	棋子编号
+		*	黑方: 卒(11) 炮(12) 車(13) 馬(14) 象(15) 士(16) 将(17)
+		*	紅方: 兵(21) 炮(22) 车(23) 马(24) 相(25) 仕(26) 帅(27)
+		*/
+	
 		
+		this.chessMap = [
+			[13,0,0,11,0,0,21,0,0,23],
+			[14,0,12,0,0,0,0,22,0,24],
+			[15,0,0,11,0,0,21,0,0,25],
+			[16,0,0,0,0,0,0,0,0,26,],
+			[17,0,0,11,0,0,21,0,0,27],
+			[16,0,0,0,0,0,0,0,0,26,],
+			[15,0,0,11,0,0,21,0,0,25],
+			[14,0,12,0,0,0,0,22,0,24],
+			[13,0,0,11,0,0,21,0,0,23]
+		]
 		
-		// 计算每个格子的平均width
-		this.scaleX = (this.canvas.width - this.config.interval * 2 ) / 9;
-		// 计算每个格子的平均height
-		this.scaleY = (this.canvas.height - this.config.interval * 2 ) / 8;
-		
-		// 棋子间距
-		this.chessInterval = this.config.gridSize - this.config.chessSize;
-		
-		// 初始化 X,Y 坐标
-		this.coord = {
-			X: 0,
-			Y: 0
+		// 这个矩阵存放真实棋子
+		this.chessArr = [[],[],[],[],[],[],[],[],[]]
+		// 实例化棋子
+		this.createChessArrByCode()
+	}
+	
+	//根据chessMap矩阵来创建chessArr棋子数组
+	createChessArrByCode(){
+		for (var i = 0;i < this.chessMap.length;i++){
+			for (var j = 0;j < this.chessMap[0].length;j++){
+				//if(this.chessMap[i][j] != 0){
+					if(this.chessMap[i][j] < 18){
+						this.chessArr[i][j] = new Chess(i, j, game.R.c[this.chessMap[i][j]], 'c', this.chessMap[i][j])
+					}else if(this.chessMap[i][j] > 20){
+						this.chessArr[i][j] = new Chess(i, j, game.R.h[this.chessMap[i][j]], 'h', this.chessMap[i][j])
+					}
+				//}
+				
+				
+			}
 		}
-		
-		// 帧编号
-		this.info = 0;
-		this.helpInfo = 0;
-		
-		
 	}
 	
-	// 进场文本
-	tipInfo(count, countAll){
-		// 提示信息
-		this.ctx.fillStyle = 'rgb(0, 0 ,0)'
-		this.ctx.fillRect(this.canvas.width / 2 - this.canvas.width / 4, this.canvas.height / 2 - 50, this.canvas.width / 2, 80)
-		this.ctx.font = '15px Microsoft YaHei'
-		this.ctx.fillStyle = 'rgb(255, 255 ,255)'
-		this.ctx.fillText('图片资源加载中··· ' +  count + '/' + countAll, this.canvas.width / 2 - 112 , this.canvas.height / 2 - 10)
-	}
-	
-	// 注册回调函数方法
-	registCallback(howmanyframelater, fn) {
-		console.log(typeof fn)
-		this.callbackss[this.info + howmanyframelater] = fn
-	}
-	
-	
-	
-	//資源配置
-	dataAllLoad(callback){
-		// 静态资源集合
-		this.R = {
-			bg:{},
-			c:{},
-			h:{}
-		};
-		// 计数
-		this.count = 0;
-		// 总数
-		this.countAll = 15;
+	// 悔棋
+	retractChess() {
+		// 函数节流
+		if( this.retractChessLock == false ) return
+		this.retractChessLock = false
+		// 悔棋
+		this.retractIdx = this.historysMap.length - 1
+		//debugger
+		if(this.retractIdx < 0){
+			return
+		}
+		this.chessArr[this.historysMap[this.retractIdx].endY][this.historysMap[this.retractIdx].endX].moveTo(this.historysMap[this.retractIdx].startY,this.historysMap[this.retractIdx].startX,8,false)
+		// 备份this
 		var self = this
-		
-		for(var k in this.imgUrl){
-			if(typeof this.imgUrl[k] === 'object'){
-				for(var key in this.imgUrl[k]){
-					this.R[k][key] = new Image();
-					this.R[k][key].src = this.imgUrl[k][key];
-					this.R[k][key].onload = function (){
-						self.count++
-						self.tipInfo(self.count, self.countAll)
-						if (this.count === this.countAll){
-							if(!self.notStrike) return 
-							callback()
-							self.notStrike = false
-						}
-					}
-				}
-			}else{
-				this.R[k] = new Image()
-				this.R[k].src = this.imgUrl[k];
-				this.R[k].onload = function (){
-					self.count++
-					self.tipInfo(self.count, self.countAll)
-					if (this.count == this.countAll){
-						if(!self.notStrike) return 
-						callback()
-						self.notStrike = false
-					}
-				}
-				
-				
-			}
-		}
-	}
-	
-	// 绑定监听
-	bingEvent(){
-		
-		
-		//备份this 因为监听的this指向的是监听自己不是Game实例所以得备份
-		var self = this;
-		this.canvas.addEventListener('click', function(e){
-			self.is++
-			// 计算鼠标在canvas点击的真实坐标
-			var x = e.pageX - self.canvas.offsetLeft;
-			var y = e.pageY - self.canvas.offsetTop;
-			var startX = parseInt(x / self.scaleX)
-			var startY = parseInt(y / self.scaleY)
-			
-			/* 
-			*	计算坐标 
-			*	startX = x(鼠标canvas里点击的X坐标) / [(canvas的宽 - 左右边距*2) / 9个坐标点]
-			*	startY = y(鼠标canvas里点击的Y坐标) / [(canvas的高 - 上下边距*2) / 8个坐标点]
-			*	startMinX = startX * 棋子大小 + (格子大小 - 棋子大小)
-			*	startMaxX = startX * 格子大小 + 棋子大小
-			*	计算出每个坐标的范围值
-			*/
-			let startMinX = startX * self.config.chessSize + (self.config.gridSize - self.config.chessSize)
-			let startMaxX = startX * self.config.gridSize + self.config.chessSize
-			let startMinY = startY * self.config.chessSize + (self.config.gridSize - self.config.chessSize)
-			let startMaxY = startY * self.config.gridSize + self.config.chessSize
-			// 必须在以上的范围内才算点击成功，否则点击失败
-			if(
-				(x + self.config.borderSize) > startMinX && (x + self.config.borderSize) < startMaxX &&
-				(y + self.config.borderSize) > (startY*50+15) && (y + self.config.borderSize) < (startY * 65 +50)
-			){
-				// 记录当前坐标
-				self.coord.X = startX
-				self.coord.Y = startY
-				console.log(self.coord.X,self.coord.Y)
-				if(self.maps.chessMap[startY][startX] != 0){
-					console.log('棋子的信息',self.maps.chessArr[startX][startY])
-				}
-				
-			}
-			
+		game.registCallback(12,function(){
+			self.chessMap[self.historysMap[self.retractIdx].endY][self.historysMap[self.retractIdx].endX] = self.historysMap[self.retractIdx].endType
+			self.chessMap[self.historysMap[self.retractIdx].startY][self.historysMap[self.retractIdx].startX] = self.historysMap[self.retractIdx].startType
+			// 同步实例化
+			self.createChessArrByCode()
+			// 删除悔棋数据(用完即删)
+			self.historysMap.pop()
 		})
 	}
 	
-	// 信息文本
-	infoText () {
+	// 更新
+	update() {
 		
-		// 帧编号
-		this.info++
-		this.ctx.fillStyle = 'black'
-		this.ctx.font = '15px Microsoft YaHei'
-		this.ctx.fillText('帧编号',this.canvas.width / 2 - 28,50)
-		this.ctx.fillStyle = 'rgb(12,190,208)'
-		this.ctx.font = '12px Arial'
-		this.ctx.fillText(this.info,this.canvas.width / 2 - 28,70)
-		
-		//状态机
-		this.ctx.fillStyle = 'rgb(255, 87, 34)'
-		this.ctx.font = '12 Microsoft YaHei'
-		this.ctx.fillText('状态机:' + this.fsm, this.canvas.width / 2 - 32, 90)
-		
-		
-		// 楚河坐标
-		this.ctx.fillStyle = 'black'
-		this.ctx.font = '30px Microsoft YaHei'
-		this.ctx.fillText('楚',this.canvas.width / 2 - 18,120)
-		this.ctx.fillText('河',this.canvas.width / 2 - 18,158)
-		
-		// 汉界坐标
-		this.ctx.fillStyle = 'red'
-		this.ctx.font = '30px Microsoft YaHei'
-		this.ctx.fillText('汉',this.canvas.width / 2 - 18,420)
-		this.ctx.fillText('界',this.canvas.width / 2 - 18,478)
 	}
 	
-	// 状态机配置
-	fsmConfig() {
-		switch(this.fsm){
-			case '静稳' :
+	// 渲染
+	render(){
+		for(var i = 0; i < this.chessMap.length; i++){
+			for(var j = 0; j < this.chessMap[0].length; j++){
+				if(this.chessMap[i][j] != 0){
+					this.chessArr[i][j].render()	// 棋子渲染
+					this.chessArr[i][j].update()	// 棋子更新
+					
+				}
 				
-			break
-			case '红方' :
-				
-			break
-			case '黑方' :
-				
-			break
-			case '红方' :
-				
-			break
-			case '检查' :
-				
-			break
-			default :
-				
-			break
-		}
-	}
-	
-	// 开始渲染
-	start() {
-		
-		
-		// 备份this 因为定时器的this指向window对象
-		var self = this;
-		// 实例化棋盘
-		this.maps = new Map()
-		
-		this.timer = setInterval(function(){
-			// 清屏
-			self.ctx.clearRect(0, 0, self.config.canvasSize.w, self.config.canvasSize.h);
-			
-			// 绘制棋盘，棋盘不在运动，所以它不是一个类，就是直接画上去
-			self.ctx.drawImage(self.R.bg, 0, 0, self.config.canvasSize.w, self.config.canvasSize.h);
-			// 渲染棋盘初始化棋子
-			self.maps.render()
-			
-			self.ctx.drawImage(self.maps.chessArr[8][9].imageName, 594, 528, 50, 50);
-			
-			// 检测当前帧编号是不是回调函数中的帧编号
-			if(self.callbackss.hasOwnProperty(self.info)) {
-				// 执行回调函数
-				//console.log(self.info)
-				self.callbackss[self.info]()
-				
-				// 当这个回调函数执行完毕后销毁
-				delete self.callbackss[self.info]
 			}
-			// 渲染状态机
-			self.fsmConfig()
-			
-			//self.map.ma.render()
-			//self.map.ma.update()
-			
-			
-			// 打印信息文本
-			self.infoText()
-		},50)
+		}
 	}
 	
 }

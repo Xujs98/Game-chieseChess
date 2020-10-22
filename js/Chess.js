@@ -23,6 +23,17 @@ class Chess{
 		this.speed = game.config.chessSpeed
 		
 		this.matrixLock = false
+		
+		this.isLimitChess = false
+		
+		//记录棋子
+		this.historysChess = {
+			startX: null,
+			startY: null,
+			endX: null,
+			endY: null,
+			type: null
+		}
 	}
 	
 	// 更新
@@ -36,12 +47,44 @@ class Chess{
 		}
 		// 当小帧编号小于0则停止运动
 		if(this.moveFno <= 0){
+			//game.fsm = '静稳'
 			this.isMove = false
 		}
 	}
 	
+	//棋子运动规则
+	limitChess(targetRow, targetCol) {
+		if(this.NumberIdx == 11){
+			if(
+				(targetCol < this.col) || (this.col+1 != targetCol && this.col < 5) 
+				|| (this.row > 4 && this.row+1 != targetCol) ||
+				(this.col+1 == targetCol && this.row+1 == targetRow) || 
+				(this.col+1 == targetCol && this.row-1 == targetRow) 
+			){
+				return
+			}
+		}
+	}
+	
+	
 	// 运动
-	moveTo(targetRow, targetCol, duringFrames) {
+	moveTo(targetRow, targetCol, duringFrames,lock=true) {
+		console.log(this.NumberIdx)
+		if(this.NumberIdx == 11 && lock){	//小兵走棋规则
+			if(
+			(targetCol < this.col) || (this.col+1 != targetCol && this.col < 5) ||
+			(this.col+1 == targetCol && this.row+1 == targetRow) || 
+			(this.col+1 == targetCol && this.row-1 == targetRow) ||
+			(this.col+1 != targetCol && this.col > 4 && this.row + 1 != targetRow && this.row - 1 != targetRow) ||
+			(this.col > 4 &&  this.row != targetRow && this.row+1 == targetRow && this.row-1 == targetRow)
+
+			){
+				return
+			}
+		}
+		// 打印
+		console.log('棋子的坐标：',this.col,this.row,'移动的坐标',targetCol,targetRow)
+		
 		this.isMove = true
 		this.pageX = targetRow
 		this.pageY = targetCol
@@ -61,17 +104,40 @@ class Chess{
 		
 		this.matrixLock = true
 		
+			
 		var self = this
 		setTimeout(function(){
-			self.updataMatrix(targetRow, targetCol)
-		},500)
+			self.updataMatrix(targetRow, targetCol,lock)
+			game.fsmPick = ''
+			game.fsm = '静稳'
+		},100)
 	}
 	
 	// 更新棋盘矩阵
-	updataMatrix(targetX, targetY){
+	updataMatrix(targetX, targetY,lock){
+		//game.maps.historysMap.shift()
+		game.maps.retractChessLock = true
+		if(!lock) return
+			//记录棋子开始,结束坐标,棋子属性
+			this.historysChess = {
+				startX: this.col,
+				startY: this.row,
+				endX: targetY,
+				endY: targetX,
+				startType: this.NumberIdx,
+				endType: game.maps.chessMap[targetX][targetY]
+			}
+			if(game.maps.chessMap[targetX][targetY] != 0){
+				console.log('你的'+game.chessType[game.maps.chessMap[this.row][this.col]]+'把对方的'+game.chessType[game.maps.chessMap[targetX][targetY]]+'给吃了')
+			}
+			game.maps.historysMap.push(this.historysChess)
+		
+		
 		game.maps.chessMap[this.row][this.col] = 0
+		
 		game.maps.chessMap[targetX][targetY] = this.NumberIdx
 		game.maps.createChessArrByCode()
+		
 	}
 	
 	

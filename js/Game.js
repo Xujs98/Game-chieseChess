@@ -4,7 +4,15 @@ class Game{
 		this.imgUrl = page.imgUrlData;
 		this.ctx = this.canvas.getContext('2d');
 		this.notStrike = true
+		this.statusMove = false
+		this.lock = true
 		
+		this.isMotion = false // 是否运动
+		this.isPick = false //是否处于选中状态
+		
+		this.fsmPick = ''
+		
+		this.goChessLock = '红'
 		
 		// 配置
 		this.config = {
@@ -12,7 +20,7 @@ class Game{
 			// 画布初始化宽高
 			canvasSize: {
 				w: 648,
-				h: 576
+				h: 580
 			},
 			// 间距
 			interval: 24,
@@ -23,7 +31,9 @@ class Game{
 			// 棋子大小
 			chessSize: 50,
 			// 棋子移动速度
-			chessSpeed: 6
+			chessSpeed: 8,
+			//谁先走
+			moveChess: true,
 		}
 		// 存儲棋盘
 		this.historysMap = []
@@ -47,6 +57,9 @@ class Game{
 		//状态机
 		this.fsm = '静稳'
 		
+		this.test = '无选中'
+		
+		
 	}
 	
 	// 初始化
@@ -66,15 +79,29 @@ class Game{
 		this.chessInterval = this.config.gridSize - this.config.chessSize;
 		
 		// 初始化 X,Y 坐标
-		this.coord = {
+		this.coordC = {
 			X: 0,
 			Y: 0
+		}
+		
+		this.coordH = {
+			X: 0,
+			Y: 0
+		}
+		
+		this.coordCheck = {
+			x: 0,
+			y: 0
 		}
 		
 		// 帧编号
 		this.info = 0;
 		this.helpInfo = 0;
 		
+		this.chessType = {
+			11:'卒', 12:'炮', 13:'車', 14:'馬', 15:'象', 16:'士', 17:'將',
+			21:'兵', 22:'炮', 23:'车', 24:'马', 25:'相', 26:'仕', 27:'帅'
+		}
 		
 	}
 	
@@ -175,13 +202,57 @@ class Game{
 				(y + self.config.borderSize) > (startY*50+15) && (y + self.config.borderSize) < (startY * 65 +50)
 			){
 				// 记录当前坐标
-				self.coord.X = startX
-				self.coord.Y = startY
-				console.log(self.coord.X,self.coord.Y)
-				if(self.maps.chessMap[startY][startX] != 0){
-					console.log('棋子的信息',self.maps.chessArr[startX][startY])
+				self.coordC.X = startX
+				self.coordC.Y = startY
+				
+				self.coordH.X = startX
+				self.coordH.Y = startY
+				
+				if(
+					self.maps.chessMap[startY][startX] != 0 &&
+					self.maps.chessMap[startY][startX] < 18 &&
+					self.maps.chessMap[startY][startX] > 10
+				){
+					
+					if(self.fsmPick == '红方' ){
+						self.fsm = '运动'
+						self.fsmPick == ''
+						return
+					}
+					self.fsmPick = '黑方'
+					self.isMotion = true
+					self.test = (self.maps.chessArr[startY][startX].type === 'h'?'红方':'黑方') + self.chessType[self.maps.chessMap[startY][startX]] + '被选中'
+					self.fsm = '检查'
+					//记录移动target(目标) x轴,y轴坐标
+					self.coordCheck.x = self.coordC.X
+					self.coordCheck.y = self.coordC.Y
+					
+				}else if(
+					self.maps.chessMap[startY][startX] != 0 &&
+					self.maps.chessMap[startY][startX] < 28 &&
+					self.maps.chessMap[startY][startX] > 20
+				){
+					
+					if(self.fsmPick == '黑方'){
+						self.fsm = '运动'
+						self.fsmPick == ''
+						return
+					}
+					self.fsmPick = '红方'
+					self.isMotion = true
+					self.test = (self.maps.chessArr[startY][startX].type === 'h'?'红方':'黑方') + self.chessType[self.maps.chessMap[startY][startX]] + '被选中'
+					console.log(self.maps.chessMap[startY][startX])
+					
+					self.fsm = '检查'
+					//记录移动target(目标) x轴,y轴坐标
+					self.coordCheck.x = self.coordH.X
+					self.coordCheck.y = self.coordH.Y
+					
+				}else if(self.fsm === '选中') {
+					self.fsm = '运动'
 				}
 				
+				console.log('鼠标点击的坐标',startX,startY)
 			}
 			
 		})
@@ -200,9 +271,11 @@ class Game{
 		this.ctx.fillText(this.info,this.canvas.width / 2 - 28,70)
 		
 		//状态机
-		this.ctx.fillStyle = 'rgb(255, 87, 34)'
-		this.ctx.font = '12 Microsoft YaHei'
+		this.ctx.fillStyle = 'rgb(255, 0, 0)'
+		this.ctx.font = '12px Microsoft YaHei'
 		this.ctx.fillText('状态机:' + this.fsm, this.canvas.width / 2 - 32, 90)
+		this.ctx.font = '15px Microsoft YaHei'
+		this.ctx.fillText( this.test, this.canvas.width / 2 - 32, 120)
 		
 		
 		// 楚河坐标
@@ -234,12 +307,44 @@ class Game{
 				
 			break
 			case '检查' :
+				this.lock = !this.lock
+				if(this.lock) return;
+				this.fsm = '选中'
+				this.lock = !this.lock
+			break
+			case '选中' :
 				
+			break
+			case '运动' :
+				if(this.isMotion){
+					if(this.fsmPick == '黑方'){
+						this.maps.chessArr[this.coordCheck.y][this.coordCheck.x].moveTo(this.coordC.Y, this.coordC.X,this.config.chessSpeed)
+						this.isMotion = false
+					}else if(this.fsmPick == '红方'){
+						this.maps.chessArr[this.coordCheck.y][this.coordCheck.x].moveTo(this.coordH.Y, this.coordH.X,this.config.chessSpeed)
+						this.isMotion = false
+					}
+					
+				}
 			break
 			default :
 				
 			break
 		}
+	}
+	
+	// 自动保存棋盘
+	autoSaveChess(save) {
+		if(!window.localStorage.getItem('autosavechess')){
+			if(save){
+				window.localStorage.setItem('autosavechess',JSON.stringify(this.maps.chessMap))
+				return true
+			}
+		}else{
+			return false
+			
+		}
+		
 	}
 	
 	// 开始渲染
@@ -259,9 +364,6 @@ class Game{
 			self.ctx.drawImage(self.R.bg, 0, 0, self.config.canvasSize.w, self.config.canvasSize.h);
 			// 渲染棋盘初始化棋子
 			self.maps.render()
-			
-			self.ctx.drawImage(self.maps.chessArr[8][9].imageName, 594, 528, 50, 50);
-			
 			// 检测当前帧编号是不是回调函数中的帧编号
 			if(self.callbackss.hasOwnProperty(self.info)) {
 				// 执行回调函数
@@ -280,7 +382,7 @@ class Game{
 			
 			// 打印信息文本
 			self.infoText()
-		},50)
+		},20)
 	}
 	
 }
