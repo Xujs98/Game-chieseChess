@@ -16,8 +16,10 @@ class Chess{
 		this.isMove = false
 		this.moveFno = 0	//小帧编号
 		
-		// 是否存活
-		this.isHide = true
+		// 是否选中
+		this.isBorder = false
+		this.borderIdx = 0
+		this.boderMax = game.R.border.length - 1
 		
 		// 移动速度
 		this.speed = game.config.chessSpeed
@@ -38,6 +40,11 @@ class Chess{
 	
 	// 更新
 	update(){
+		this.borderIdx++
+		if (this.borderIdx >= this.boderMax){
+			this.borderIdx = 0
+		}
+		
 		if(this.isMove){
 			this.x += this.dx
 			this.y += this.dy
@@ -56,10 +63,10 @@ class Chess{
 	limitChess(targetRow, targetCol) {
 		if(this.NumberIdx == 11){
 			if(
-				(targetCol < this.col) || (this.col+1 != targetCol && this.col < 5) 
-				|| (this.row > 4 && this.row+1 != targetCol) ||
-				(this.col+1 == targetCol && this.row+1 == targetRow) || 
-				(this.col+1 == targetCol && this.row-1 == targetRow) 
+			(targetCol < this.col) || (this.col+1 != targetCol && this.col < 5) 
+			|| (this.row > 4 && this.row+1 != targetCol) ||
+			(this.col+1 == targetCol && this.row+1 == targetRow) || 
+			(this.col+1 == targetCol && this.row-1 == targetRow) 
 			){
 				return
 			}
@@ -69,8 +76,7 @@ class Chess{
 	
 	// 运动
 	moveTo(targetRow, targetCol, duringFrames,lock=true) {
-		console.log(this.NumberIdx)
-		if(this.NumberIdx == 11 && lock){	//小兵走棋规则
+		if(this.NumberIdx == 11 && lock){	// 黑兵走棋规则
 			if(
 			(targetCol < this.col) || (this.col+1 != targetCol && this.col < 5) ||
 			(this.col+1 == targetCol && this.row+1 == targetRow) || 
@@ -82,8 +88,48 @@ class Chess{
 				return
 			}
 		}
+		if(this.NumberIdx == 21 && lock){	// 紅兵走棋规则
+			if(
+			(targetCol > this.col) || (this.col-1 != targetCol && this.col > 5) ||
+			(this.col-1 == targetCol && this.row+1 == targetRow) || 
+			(this.col-1 == targetCol && this.row-1 == targetRow) ||
+			(this.col-1 != targetCol && this.col < 4 && this.row + 1 != targetRow && this.row - 1 != targetRow) ||
+			(this.col < 4 &&  this.row != targetRow && this.row+1 == targetRow && this.row-1 == targetRow)
+
+			){
+				return
+			}
+		}
+		
+		if (this.NumberIdx == 12 && lock || this.NumberIdx == 22) {		// 炮走棋規則
+			if (
+				this.col != targetCol && targetRow !=  this.row
+			) {
+				return
+			}
+			
+		}
+		
+		if (this.NumberIdx == 13 && lock || this.NumberIdx == 23) {		// 車、车 走棋規則
+			if (
+				this.col != targetCol && targetRow !=  this.row
+			) {
+				return
+			}
+			
+		}
+		
+		if (this.NumberIdx == 14 && lock || this.NumberIdx == 24){
+			
+		}
+		
+		
+		
+		
+		
+		
 		// 打印
-		console.log('棋子的坐标：',this.col,this.row,'移动的坐标',targetCol,targetRow)
+		//console.log('棋子的坐标：',this.col,this.row,'移动的坐标',targetCol,targetRow)
 		
 		this.isMove = true
 		this.pageX = targetRow
@@ -115,6 +161,9 @@ class Chess{
 	
 	// 更新棋盘矩阵
 	updataMatrix(targetX, targetY,lock){
+		window.localStorage.setItem('autosavechess',JSON.stringify(game.maps.chessMap))
+		this.isBorder = false
+		game.test = '无选中'
 		//game.maps.historysMap.shift()
 		game.maps.retractChessLock = true
 		if(!lock) return
@@ -143,7 +192,18 @@ class Chess{
 	
 	// 渲染
 	render(){
-		game.ctx.drawImage(this.imageName, this.x, this.y, this.w, this.w)
+		//if(game.test == '无选中'){
+		//	game.ctx.drawImage(this.imageName, this.x, this.y, this.w, this.w)
+			
+		//}else{
+			if (this.isBorder == true) {
+				game.ctx.drawImage(game.R.border[this.borderIdx], this.x, this.y-3, this.w, this.w)
+				game.ctx.drawImage(this.imageName, this.x, this.y, this.w, this.w)
+			}else{
+				game.ctx.drawImage(this.imageName, this.x, this.y, this.w, this.w)
+			}
+		//}
+		
 	}
 	
 	// 辅助函数

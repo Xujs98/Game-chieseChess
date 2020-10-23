@@ -10,7 +10,7 @@
 			margin:0;
 		}
 		body {
-			background-color:#333;
+			background-color:#ccc;
 		}
 		#mycanvas{
 			display:block;
@@ -41,7 +41,7 @@
 		.box{
 			position:relative;
 		}
-		#regret{
+		.regret{
 			position:absolute;
 			top:80px;
 			left:5%;
@@ -55,14 +55,18 @@
 			cursor:pointer;
 			
 		}
-		#regret:hover{
+		.regret:hover{
 			background-color:orange;
+		}
+		.regret:nth-child(2){
+			top:160px;
 		}
 	</style>
 </head>
 <body>
 <div class='box'>
-	<button id='regret'>悔 棋</button>
+	<button id='regret' class='regret'>悔 棋</button>
+	<button id='againStart' style='background-color:#f44336' class='regret'>重新开始</button>
 	<canvas id='mycanvas'>
 		你又用低級浏览器来打开？你不知道我很高级的吗？必须要用高级浏览器打开，赶紧用chrome浏览器打开，气死本CANVAS了！
 	</canvas>
@@ -74,46 +78,55 @@
 <script>
 	// 悔棋按钮
 	const regret = document.querySelector('#regret')
-
+	const againStart = document.querySelector('#againStart')
+	const idx = 2
 	//格式化全部图片资源
 	var imgUrlAll = {
 		c:{
-			11:'./images/cb1.png',
-			12:'./images/cp1.png',
-			13:'./images/cc1.png',
-			14:'./images/cm1.png',
-			15:'./images/cx1.png',
-			16:'./images/cs1.png',
-			17:'./images/cj.png'
+			11:'./images/chess'+ idx +'/cb1.png',
+			12:'./images/chess'+ idx +'/cp1.png',
+			13:'./images/chess'+ idx +'/cc1.png',
+			14:'./images/chess'+ idx +'/cm1.png',
+			15:'./images/chess'+ idx +'/cx1.png',
+			16:'./images/chess'+ idx +'/cs1.png',
+			17:'./images/chess'+ idx +'/cj.png'
 		},
 		h:{
-			21: './images/hb1.png',
-			22:'./images/hp1.png',
-			23:'./images/hc1.png',
-			24:'./images/hm1.png',
-			25:'./images/hx1.png',
-			26:'./images/hs1.png',
-			27:'./images/hj.png'
+			21: './images/chess'+ idx +'/hb1.png',
+			22:'./images/chess'+ idx +'/hp1.png',
+			23:'./images/chess'+ idx +'/hc1.png',
+			24:'./images/chess'+ idx +'/hm1.png',
+			25:'./images/chess'+ idx +'/hx1.png',
+			26:'./images/chess'+ idx +'/hs1.png',
+			27:'./images/chess'+ idx +'/hj.png'
 		},
 		bg: './images/bg.png'
 	}
 	
-	var img = new Image();
-	img.src = imgUrlAll.c.bing;
-	img.onload = function(){
-		console.log(1)
-	}
+	const border = [
+		'./images/border/1.png', './images/border/2.png',
+		'./images/border/3.png', './images/border/4.png',
+		'./images/border/5.png', './images/border/6.png',
+		'./images/border/7.png', './images/border/8.png',
+		'./images/border/9.png', './images/border/10.png',
+		'./images/border/11.png', './images/border/12.png'
+	]
+	
+
 	
 	var game = new Game({
 		el:' #mycanvas',
-		imgUrlData: imgUrlAll
+		imgUrlData: imgUrlAll,
+		imgArr:border
 	});
 	
 	
 	regret.onclick = function(){
 		game.maps.retractChess()
 	}
-	
+	againStart.onclick = function(){
+		game.maps.againStart()
+	}
 </script>
 </body>
 </html>
